@@ -15,6 +15,11 @@ RUN apt-get update -qq && apt-get install -y \
 # Crée le dossier de travail
 WORKDIR /app
 
+# Configure Bundler pour installer les gems dans un dossier dédié (monté en volume)
+ENV BUNDLE_PATH=/bundle
+ENV BUNDLE_JOBS=4
+ENV BUNDLE_RETRY=3
+
 # Copie les fichiers de dépendances Ruby
 COPY Gemfile ./
 COPY Gemfile.lock* ./

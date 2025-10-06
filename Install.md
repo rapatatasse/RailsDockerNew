@@ -1,5 +1,5 @@
 # Installer l'application
-ocker compose run --no-deps web rails new . -d=sqlite3 -c=tailwind --skip-bundle
+docker compose run --no-deps web rails new . -d=sqlite3 -c=tailwind --skip-bundle
 docker compose run web bundle lock --add-platform x86_64-linux
 docker compose build --no-cache
 
