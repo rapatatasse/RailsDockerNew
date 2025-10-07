@@ -1,0 +1,54 @@
+# Dockerfile pour le développement Rails local
+# Compatible Windows 11, Linux, macOS
+FROM ruby:3.3.9-slim
+
+# Installer les dépendances système nécessaires pour Rails
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+    build-essential \
+    curl \
+    git \
+    libjemalloc2 \
+    libvips \
+    pkg-config \
+    sqlite3 \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Arguments pour l'utilisateur (définis par docker-compose)
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG USERNAME=rails
+
+# Créer un groupe et utilisateur avec les mêmes UID/GID que l'hôte
+# Gestion spéciale pour éviter les conflits sur différents OS
+RUN if [ "$USER_ID" != "0" ]; then \
+        groupadd --gid $GROUP_ID $USERNAME 2>/dev/null || groupmod -g $GROUP_ID $USERNAME; \
+        useradd --uid $USER_ID --gid $GROUP_ID --create-home --shell /bin/bash $USERNAME 2>/dev/null || usermod -u $USER_ID -g $GROUP_ID $USERNAME; \
+    fi
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Créer les répertoires nécessaires avec les bonnes permissions
+RUN mkdir -p /app/tmp /app/log /app/storage && \
+    if [ "$USER_ID" != "0" ]; then chown -R $USER_ID:$GROUP_ID /app; fi
+
+# Variables d'environnement pour le développement
+ENV RAILS_ENV=development
+ENV BUNDLE_PATH=/usr/local/bundle
+ENV PATH="/usr/local/bundle/bin:$PATH"
+
+# Passer à l'utilisateur non-root (sauf si USER_ID=0)
+USER ${USER_ID}:${GROUP_ID}
+
+# Exposer le port Rails
+EXPOSE 3000
+
+# Script d'entrée pour initialiser l'application
+COPY --chown=${USER_ID}:${GROUP_ID} docker-entrypoint-dev.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint-dev.sh
+
+ENTRYPOINT ["docker-entrypoint-dev.sh"]
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
